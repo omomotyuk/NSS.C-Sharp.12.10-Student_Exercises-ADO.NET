@@ -28,14 +28,16 @@ namespace Student_Exercises_ADO.NET.Data
         /// <summary>
         ///  Returns a list of all selected fields in the database
         /// </summary>
-        public List<T> GetAll( string table, List<string> fields )
+        public List<T> GetAll( string table, List<string> fields, string query )
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = GetSelectQuery(table, fields);
+                    //cmd.CommandText = GetSelectQuery(table, fields);
+                    //Console.WriteLine($"query = {query}\n");
+                    cmd.CommandText = query;
                     SqlDataReader reader = cmd.ExecuteReader();
 
                     /*
@@ -78,9 +80,43 @@ namespace Student_Exercises_ADO.NET.Data
             }
         }
 
+        public void Insert( string table, Dictionary<string,string> data)
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    //Console.WriteLine($"{GetInsertQuery(table, data)}");
+                    cmd.CommandText = GetInsertQuery( table, data);
+
+                    foreach( KeyValuePair<string,string> item in data )
+                    {
+                        string parameter = String.Concat("@", item.Key);
+                        //Console.WriteLine($"{parameter}, {item.Value}");
+                        cmd.Parameters.Add(new SqlParameter( parameter, item.Value ));
+                    }
+
+                    int id = (int) cmd.ExecuteScalar();
+                }
+            }
+        }
+
         public string GetSelectQuery( string table, List<string> fields )
         {
             return String.Concat("SELECT ", String.Join(", ", fields), " FROM ", table);
+        }
+
+        public string GetInsertQuery(string table, Dictionary<string,string> data)
+        {
+            List<string> fields = new List<string>();
+            List<string> values = new List<string>();
+            foreach( KeyValuePair<string,string> item in data )
+            {
+                fields.Add(item.Key);
+                values.Add(item.Value);
+            }
+            return String.Concat( "INSERT INTO ", table, " (", String.Join( ", ", fields), ")", " OUTPUT INSERTED.Id ", " VALUES (@", String.Join( ", @", fields), ")" );
         }
     }
 }
