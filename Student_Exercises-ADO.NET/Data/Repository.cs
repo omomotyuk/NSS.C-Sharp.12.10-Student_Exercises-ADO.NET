@@ -102,6 +102,60 @@ namespace Student_Exercises_ADO.NET.Data
             }
         }
 
+        public List<T> InnerJoin(string query, List<string> fields, List<string> parameters )
+        {
+            using (SqlConnection conn = Connection)
+            {
+                conn.Open();
+                using (SqlCommand cmd = conn.CreateCommand())
+                {
+                    //Console.WriteLine($"{GetInsertQuery(table, data)}");
+                    cmd.CommandText = query;
+
+                    /*foreach (string item in parameters)
+                    {
+                        string parameter = String.Concat("@", item);
+                        Console.WriteLine($"{parameter}, {item}");
+                        cmd.Parameters.Add(new SqlParameter(parameter, item));
+                    }*/
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    List<T> itemList = new List<T>();
+
+                    Dictionary<string, string> fieldValues = new Dictionary<string, string>();
+                    while (reader.Read())
+                    {
+                        foreach (string field in fields)
+                        {
+                            Console.WriteLine($"{field}");
+                            int position = reader.GetOrdinal(field);
+                            string value = "";
+                            try
+                            {
+                                value = reader.GetString(position);
+                            }
+                            catch
+                            {
+                                value = reader.GetInt32(position).ToString();
+                            }
+                            fieldValues.Add(field, value);
+                        }
+
+                        var newItem = new T();
+                        newItem.Set(fieldValues);
+                        itemList.Add(newItem);
+
+                        fieldValues.Clear();
+                    }
+
+                    return itemList;
+                }
+            }
+        }
+
+
+
         public string GetSelectQuery( string table, List<string> fields )
         {
             return String.Concat("SELECT ", String.Join(", ", fields), " FROM ", table);
